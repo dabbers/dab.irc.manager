@@ -1,0 +1,31 @@
+{
+  "name": "dab.irc.manager",
+  "version": "1.0.0",
+  "description": "Parsing logig for IRC. Depends on dab.irc.core and dab.irc.manager",
+  "typings": "bin/src",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node bin\\sample.js",
+    "test": "node bin\\test\\index.js",
+    "prepublish": "tsc"
+  },
+  "keywords": [
+    "dab",
+    "irc",
+    "library",
+    "parse",
+    "parser",
+    "manager",
+    "users"
+  ],
+  "author": "dab",
+  "license": "MIT",
+  "dependencies": {
+    "tsunit.external": "^2.0.1",
+    "dab.irc.core": "^1.0.0",
+    "dab.irc.parser": "^1.0.0"
+  }
+}
