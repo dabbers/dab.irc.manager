@@ -1,9 +1,9 @@
 import net = require('net');
 import tls = require('tls');
 
-import {ParserServer} from './src/ParserServer';
+import {ParserServer} from 'dab.irc.parser/src/ParserServer';
 import * as Core from 'dab.irc.core/src';
-import {ConversationMessage} from './src/MessageTypes/ConversationMessage';
+import {ConversationMessage} from 'dab.irc.parser/src/MessageTypes/ConversationMessage';
 
 class SampleIRCContext implements Core.IConnectionContext {
     connection: Core.Connection;

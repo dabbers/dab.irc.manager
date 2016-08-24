@@ -1,0 +1,80 @@
+import * as Core from 'dab.irc.core/src';
+import * as Parser from 'dab.irc.parser/src';
+
+import {UserManager} from './UserManager';
+import {ManagedChannel} from './ManagedChannel';
+
+export class ChannelManager {
+    get users() : UserManager {
+        return this._users;
+    }
+
+    get channels() : ManagedChannel[] {
+        return this._channels;
+    }
+
+    register(server: Parser.ParserServer) {
+        server.on(Parser.Events.JOIN, this.bindJoin);
+        server.on(Parser.Events.PART, this.bindPart);
+        server.on(Parser.Events.MODE, this.bindMode);
+    }
+
+    unregister(server: Parser.ParserServer) {
+        server.removeListener(Parser.Events.JOIN, this.bindJoin);
+        server.removeListener(Parser.Events.PART, this.bindJoin);
+        server.removeListener(Parser.Events.MODE, this.bindMode);
+    }
+
+    // For when the connection joins a channel
+    join(channel: Core.Channel) : boolean {
+        // Check if channel is already added
+        if (this._channels.filter( (v:ManagedChannel, id: number, ar:ManagedChannel[]) => v.display.toLocaleLowerCase() == channel.display.toLocaleLowerCase()).length > 0) {
+            return false;
+        }
+
+        if (channel instanceof ManagedChannel) {
+            this._channels.push(channel);
+        }
+        else {
+            this._channels.push(new ManagedChannel(channel.display, this));
+        }
+
+        return true;
+    }
+
+    // when another user joins
+    bindJoin(s : Parser.ParserServer, m : Core.Message) {
+        let msg = <Parser.ChannelUserChangeMessage>m;
+        this._users.join(msg, msg.destination);
+    }
+    bindPart(s : Parser.ParserServer, m : Core.Message) {
+        let msg = <Parser.ChannelUserChangeMessage>m;
+        this._users.part(msg, msg.destination);
+    }
+
+    bindMode(s: Parser.ParserServer, m:Core.Message) {
+        let msg = <Parser.ModeChangeMessage>m;
+
+        if (msg.target instanceof Core.Channel) {
+            let ch = this._channels.filter((v,i,a) => v.display.toLocaleLowerCase() == s.display.toLocaleLowerCase());
+
+            if (ch.length > 0) {
+                ch[0].modeChanged(msg.modes);
+            }
+        }
+    }
+
+    part(channel: Core.Channel) : void {
+        let i:any = 0;
+        for(i in this._channels) {
+            if (this._channels[i].display == channel.display) {
+                break;
+            }
+        }
+
+        this._channels.splice(i,1);
+    }
+
+    private _users : UserManager;
+    private _channels : ManagedChannel[];
+}

@@ -1,5 +1,5 @@
 import tsUnit = require('tsunit.external/tsUnit');
-import * as Parser from '../../src/';
+import * as Parser from 'dab.irc.parser/src/';
 import * as Core from 'dab.irc.core/src';
 
 
