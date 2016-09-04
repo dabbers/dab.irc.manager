@@ -13,16 +13,22 @@ export class ChannelManager {
         return this._channels;
     }
 
+    constructor(userManager : UserManager = new UserManager()) {
+        this._users = userManager;
+    }
+
     register(server: Parser.ParserServer) {
         server.on(Parser.Events.JOIN, this.bindJoin);
         server.on(Parser.Events.PART, this.bindPart);
         server.on(Parser.Events.MODE, this.bindMode);
+        server.on(Parser.Numerics.NAMREPLY, this.bindNames);
     }
 
     unregister(server: Parser.ParserServer) {
         server.removeListener(Parser.Events.JOIN, this.bindJoin);
         server.removeListener(Parser.Events.PART, this.bindJoin);
         server.removeListener(Parser.Events.MODE, this.bindMode);
+        server.removeListener(Parser.Numerics.NAMREPLY, this.bindNames);
     }
 
     // For when the connection joins a channel
@@ -62,6 +68,10 @@ export class ChannelManager {
                 ch[0].modeChanged(msg.modes);
             }
         }
+    }
+
+    bindNames(s: Parser.ParserServer, m:Core.Message) {
+        let msg = <Parser.NamesMessage>m;
     }
 
     part(channel: Core.Channel) : void {

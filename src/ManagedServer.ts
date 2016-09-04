@@ -16,7 +16,7 @@ export class ManagedServer extends Parser.ParserServer {
         return this._me;
     }
 
-    constructor(host: string, connection: Core.Connection, chanManager : ChannelManager, parser:Parser.DynamicParser = null) {
+    constructor(host: string, connection: Core.Connection, parser:Parser.DynamicParser = null, chanManager : ChannelManager = new ChannelManager()) {
         super(host, connection, parser);
 
         this._manager = chanManager;

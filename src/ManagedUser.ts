@@ -25,7 +25,7 @@ export class ManagedUser extends Core.User {
         for(var i in modes) {
             let mode = modes[i];
 
-            if (mode.type == Core.ModeType.UMode) {
+            if (mode.type != Core.ModeType.ChannelUser) {
                 continue;
             }
 

@@ -38,6 +38,16 @@ export class UserManager {
         return result;
     }
 
+    nameAdd(who:Core.User|ManagedUser, channel:Core.Channel) {
+        if (!this._allUsers[who.nick]) {
+            this._allUsers[who.nick] = (who instanceof ManagedUser ? who : new ManagedUser(who.nick, who.ident, who.host));
+        }
+
+        // We check if we already join the channel inside the join method. No need to double check here.
+        this._allUsers[who.nick].join(channel.display);
+        this._allUsers[who.nick].modeChanged(channel.display, who.modes);
+    }
+
     join(msg: Parser.ChannelUserChangeMessage, channel: Core.Channel) {
         let who = <Core.User>msg.from;
 
@@ -45,7 +55,7 @@ export class UserManager {
             this._allUsers[who.nick] = new ManagedUser(who.nick, who.ident, who.host);
         }
         
-        // We check if we already join the channel inside this method. No need to double check.
+        // We check if we already join the channel inside the join method. No need to double check here.
         this._allUsers[who.nick].join(channel.display);
     }
 
