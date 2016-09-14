@@ -22,6 +22,7 @@ export class ChannelManager {
         server.on(Parser.Events.PART, this.bindPart);
         server.on(Parser.Events.MODE, this.bindMode);
         server.on(Parser.Numerics.NAMREPLY, this.bindNames);
+        server.on(Parser.Events.NICK, this.bindNickChange);
     }
 
     unregister(server: Parser.ParserServer) {
@@ -29,6 +30,7 @@ export class ChannelManager {
         server.removeListener(Parser.Events.PART, this.bindJoin);
         server.removeListener(Parser.Events.MODE, this.bindMode);
         server.removeListener(Parser.Numerics.NAMREPLY, this.bindNames);
+        server.removeListener(Parser.Events.NICK, this.bindNickChange);
     }
 
     // For when the connection joins a channel
@@ -46,6 +48,11 @@ export class ChannelManager {
         }
 
         return true;
+    }
+
+    bindNickChange(s:Parser.ParserServer, m:Core.Message) {
+        let msg = <Parser.NickChangeMessage>m;
+        this._users.rename((<Core.User>msg.from).nick, msg.destination.nick);
     }
 
     // when another user joins

@@ -1,7 +1,7 @@
 import tsUnit = require('tsunit.external/tsUnit');
 import * as Parser from 'dab.irc.parser/src/';
 import * as Core from 'dab.irc.core/src';
-
+import * as Manager from '../../src';
 
 class testSocket implements Core.ISocket {
     constructor(cb:() => any) {
@@ -70,26 +70,6 @@ class SampleIRCContext implements Core.IConnectionContext {
 
 export class FunctionalTests extends tsUnit.TestClass {
 
-    endToEnd_001: boolean = false;
-    endToEnd_002 :boolean = false;
-    endToEnd_003 :boolean = false;
-    endToEnd_004 :boolean = false;
-    endToEnd_005 :boolean = false;
-
-    endToEnd_NoticeAuth: boolean = false;
-
-    endToEnd_PRIVMSG_Chan :boolean = false;
-    endToEnd_PRIVMSG_Chan_Wall :boolean = false;
-    endToEnd_PRIVMSG_Chan_action :boolean = false;
-    endToEnd_PrivmsgPM :boolean = false;
-
-    endToEnd_ModeUser :boolean = false;
-    endToEnd_ModeChannel_Add :boolean = false;
-    endToEnd_ModeChannel_Remove :boolean = false;
-
-    endToEnd_Join :boolean = false;
-    endToEnd_Part :boolean = false;
-    endToEnd_Motd :boolean = false;
 
     endToEndTest() : void {
         let data = ":kira.orbital.link NOTICE AUTH :*** Looking up your hostname...\r\n" + 
@@ -107,12 +87,11 @@ export class FunctionalTests extends tsUnit.TestClass {
             ":servr 333 dabirc #test dabirc2 1466217608\r\n" + // Timestamp for channel topic set and who set it
             ":servr 353 dabirc @ #test :dabirc &@dabirc2 ~@dabirc3\r\n" + // normally we'd need to enable multi prefix, but for the test pretend it was
             ":servr 366 dabirc #test :End of /NAMES list.\r\n" +
-            ":dabirc2!ident@host PRIVMSG #test :testing\r\n" +
             ":dabirc2!ident@host MODE #test +v dabirc\r\n" +
-            ":dabirc2!ident@host PRIVMSG +#test :testing\r\n" +
-            ":dabirc2!ident@host MODE #test -v dabirc\r\n" +
-            ":dabirc2!ident@host PRIVMSG dabirc :test\r\n" +
-            ":dabirc2!ident@host PRIVMSG #test :" + "\x01" + "ACTION tests" + "\x01" + "\r\n" +
+            ":dabirc!baditp@127.0.0.0 NICK :dabircA\r\n" +
+            ":dabirc2!ident@host MODE #test -v dabircA\r\n" +
+            ":dabircA!baditp@127.0.0.0 NICK :dabircB\r\n" +
+            ":cribad!ident@127.0.0.0 JOIN :#test\r\n" +
             ":dabirc!baditp@127.0.0.0 PART #test :Goodbye message\r\n" /*+
             "\r\n" +
             "\r\n" +
@@ -126,93 +105,22 @@ export class FunctionalTests extends tsUnit.TestClass {
 
         let ctx = new SampleIRCContext();
         let connection = new Core.Connection();
-        let svr = new Parser.ParserServer("", connection);
+        let manager = new Manager.ChannelManager();
 
-        svr.on(Parser.Events.NOTICE, (s:Parser.ParserServer, m:Core.Message) => {
-            let msg = <Parser.ConversationMessage>m;
-            this.areIdentical("AUTH", msg.destination.display, "Destination should be AUTH");
-            this.endToEnd_NoticeAuth = true; 
-        });
-        svr.on(Parser.Numerics.ISUPPORT, (s:Parser.ParserServer, m:Core.Message) => {
-            this.isTrue(Object.keys(svr.attributes).length > 0);
-            this.endToEnd_005 = true;
-        });
-        svr.on(Parser.Numerics.MYINFO, (s:Parser.ParserServer, m:Core.Message) => {
-            this.endToEnd_004 = true;
-        });
-        svr.on(Parser.Numerics.CREATED, (s:Parser.ParserServer, m:Core.Message) => {
-            this.endToEnd_003 = true;
-        });
-        svr.on(Parser.Numerics.YOURHOST, (s:Parser.ParserServer, m:Core.Message) => {
-            this.endToEnd_002 = true;
-        });
-        svr.on(Parser.Numerics.WELCOME, (s:Parser.ParserServer, m:Core.Message) => {
-            this.endToEnd_001 = true;
-        });
-        svr.on(Parser.Numerics.MOTD, (s:Parser.ParserServer, m:Core.Message) => {
-            this.endToEnd_Motd = true;
-        });
-        svr.on(Parser.Events.MODE, (s:Parser.ParserServer, m:Core.Message) => {
-            let msg = <Parser.ModeChangeMessage>m;
+        let svr = new Manager.ManagedServer("blah", connection, null, manager);
 
-            if (msg.target instanceof Core.User) {
-                this.areIdentical("i", msg.modes[0].character) 
-                this.areIdentical(Core.ModeChangeType.Adding, msg.modes[0].change);
-                this.areIdentical("w", msg.modes[1].character) 
-                this.areIdentical(Core.ModeChangeType.Adding, msg.modes[1].change);
-                this.areIdentical("x", msg.modes[2].character) 
-                this.areIdentical(Core.ModeChangeType.Adding, msg.modes[2].change);
-                this.areIdentical("z", msg.modes[3].character) 
-                this.areIdentical(Core.ModeChangeType.Adding, msg.modes[3].change);
-
-                this.endToEnd_ModeUser = true;
-            }
-            else if (msg.target instanceof Core.Channel) {
-                if (msg.modes.length == 1) {
-                    if (msg.modes[0].change == Core.ModeChangeType.Adding) {
-                        this.areIdentical("v", msg.modes[0].character);
-                        this.areIdentical("dabirc", msg.modes[0].argument);
-                        this.endToEnd_ModeChannel_Add = true;
-                    }
-                    else {
-                        this.areIdentical("v", msg.modes[0].character);
-                        this.areIdentical("dabirc", msg.modes[0].argument);
-                        this.endToEnd_ModeChannel_Remove = true;
-                    }
-                }
-            }
-        });
-        svr.on(Parser.Events.PRIVMSG, (s:Parser.ParserServer, m:Core.Message) => {
-            let msg = <Parser.ConversationMessage>m;
-            
-            if (msg.messageTags["intent"] == "ACTION") {
-                this.areIdentical("tests", msg.message);
-                this.endToEnd_PRIVMSG_Chan_action = true;
-            }
-            else if (msg.wall == "+") {
-                this.endToEnd_PRIVMSG_Chan_Wall = true;
-            }
-            else if (msg.destination instanceof Core.User) {
-                this.endToEnd_PrivmsgPM = true;
-            }
-            else if (msg.destination.display == "#test" ) {
-                this.endToEnd_PRIVMSG_Chan = true;
-            }
-        });
         svr.on(Parser.Events.JOIN, (s:Parser.ParserServer, m:Core.Message) => {
             let msg = <Parser.ChannelUserChangeMessage>m;
-            this.areIdentical("JOIN", msg.command);
-            this.areIdentical("dabirc!baditp@127.0.0.0", msg.from.display);
-            this.areIdentical("#test", msg.destination.display);
-            this.endToEnd_Join = true;
-        });
-        svr.on(Parser.Events.PART, (s:Parser.ParserServer, m:Core.Message) => {
-            let msg = <Parser.ChannelUserChangeMessage>m;
-            this.areIdentical("PART", msg.command);
-            this.areIdentical("dabirc!baditp@127.0.0.0", msg.from.display);
-            this.areIdentical("#test", msg.destination.display);
-            this.areIdentical("Goodbye message", msg.message);
-            this.endToEnd_Part = true;
+            let length = Object.keys(manager.users.all).length;
+
+            if (msg.from.display == "dabirc!dabitp@127.0.0.1") {
+                // no users should be in here but ourselves?
+                this.areIdentical(1, length);
+            }
+            else {
+                // technically the server event should have executed first, so we should already have an updated user count
+                this.areIdentical(4, length);
+            }
         });
         
         ctx.dataCallback = svr.dataReceived;
@@ -222,22 +130,7 @@ export class FunctionalTests extends tsUnit.TestClass {
         // send data to "socket"
         ctx.socket.callback(data);
 
-        this.isTrue(this.endToEnd_001, "001 error");
-        this.isTrue(this.endToEnd_002, "002 error");
-        this.isTrue(this.endToEnd_003, "003 error");
-        this.isTrue(this.endToEnd_004, "004 error");
-        this.isTrue(this.endToEnd_005, "005 error");
-        this.isTrue(this.endToEnd_Join, "join error");
-        this.isTrue(this.endToEnd_ModeChannel_Add, "mode channel add error");
-        this.isTrue(this.endToEnd_ModeChannel_Remove, "mode channel remove error");
-        this.isTrue(this.endToEnd_ModeUser, "mode user error");
-        this.isTrue(this.endToEnd_Motd, "motd error");
-        this.isTrue(this.endToEnd_NoticeAuth, "notice auth error");
-        this.isTrue(this.endToEnd_Part, "part error");
-        this.isTrue(this.endToEnd_PRIVMSG_Chan, "privmsg channel error");
-        this.isTrue(this.endToEnd_PRIVMSG_Chan_action, "privmsg channel action error");
-        this.isTrue(this.endToEnd_PRIVMSG_Chan_Wall, "privmsg channel wall error");
-        this.isTrue(this.endToEnd_PrivmsgPM, "privmsg pm error");
+
     }
 
 }

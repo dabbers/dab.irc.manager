@@ -63,7 +63,7 @@ export class UserManager {
         let who = <Core.User>msg.from;
 
         if (!this._allUsers[who.nick]) {
-            throw new Error("Why are we seeing a part from a user not recorded?");
+            throw new Error("Why are we seeing a part from a user not recorded? " + who.nick);
         }
 
         this._allUsers[who.nick].part(channel.display);
@@ -71,6 +71,9 @@ export class UserManager {
 
     rename(from: string, to: string) {
         let user = this._allUsers[from];
+        
+        if (!user) throw new Error("Why is there no user found during a nick change? " + from + " to " + to);
+
         delete this._allUsers[from];
 
         user.nick = to;

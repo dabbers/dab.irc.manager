@@ -35,7 +35,7 @@ export class ManagedServer extends Parser.ParserServer {
         });
 
         this.on(Parser.Numerics.ENDOFMOTD, (s:Parser.ParserServer, m : Core.Message) => {
-            this.connection.write("WHOIS " + m.tokenized[2]);
+            this.connection.write("WHOIS " + m.tokenized[2]); // whois me.nick
         });
 
         this.on(Parser.Events.MODE, (s:Parser.ParserServer, m:Core.Message) => {
@@ -57,7 +57,7 @@ export class ManagedServer extends Parser.ParserServer {
         for(var i in modes) {
             let mode = modes[i];
 
-            if (mode.type == Core.ModeType.UMode) {
+            if (mode.type != Core.ModeType.UMode) {
                 continue;
             }
 
