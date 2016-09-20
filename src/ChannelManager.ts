@@ -18,11 +18,11 @@ export class ChannelManager {
     }
 
     register(server: Parser.ParserServer) {
-        server.on(Parser.Events.JOIN, this.bindJoin);
-        server.on(Parser.Events.PART, this.bindPart);
-        server.on(Parser.Events.MODE, this.bindMode);
-        server.on(Parser.Numerics.NAMREPLY, this.bindNames);
-        server.on(Parser.Events.NICK, this.bindNickChange);
+        server.on(Parser.Events.JOIN, this.bindJoin.bind(this));
+        server.on(Parser.Events.PART, this.bindPart.bind(this));
+        server.on(Parser.Events.MODE, this.bindMode.bind(this));
+        server.on(Parser.Numerics.NAMREPLY, this.bindNames.bind(this));
+        server.on(Parser.Events.NICK, this.bindNickChange.bind(this));
     }
 
     unregister(server: Parser.ParserServer) {
@@ -79,6 +79,9 @@ export class ChannelManager {
 
     bindNames(s: Parser.ParserServer, m:Core.Message) {
         let msg = <Parser.NamesMessage>m;
+        for(let i in msg.users) {
+            this._users.nameAdd(msg.users[i], <Core.Channel>msg.destination);
+        }
     }
 
     part(channel: Core.Channel) : void {
@@ -93,5 +96,5 @@ export class ChannelManager {
     }
 
     private _users : UserManager;
-    private _channels : ManagedChannel[];
+    private _channels : ManagedChannel[] = [];
 }

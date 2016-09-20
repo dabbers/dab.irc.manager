@@ -35,6 +35,13 @@ var UserManager = (function () {
         }
         return result;
     };
+    UserManager.prototype.nameAdd = function (who, channel) {
+        if (!this._allUsers[who.nick]) {
+            this._allUsers[who.nick] = (who instanceof ManagedUser_1.ManagedUser ? who : new ManagedUser_1.ManagedUser(who.nick, who.ident, who.host));
+        }
+        this._allUsers[who.nick].join(channel.display);
+        this._allUsers[who.nick].modeChanged(channel.display, who.modes);
+    };
     UserManager.prototype.join = function (msg, channel) {
         var who = msg.from;
         if (!this._allUsers[who.nick]) {
@@ -45,12 +52,14 @@ var UserManager = (function () {
     UserManager.prototype.part = function (msg, channel) {
         var who = msg.from;
         if (!this._allUsers[who.nick]) {
-            throw new Error("Why are we seeing a part from a user not recorded?");
+            throw new Error("Why are we seeing a part from a user not recorded? " + who.nick);
         }
         this._allUsers[who.nick].part(channel.display);
     };
     UserManager.prototype.rename = function (from, to) {
         var user = this._allUsers[from];
+        if (!user)
+            throw new Error("Why is there no user found during a nick change? " + from + " to " + to);
         delete this._allUsers[from];
         user.nick = to;
         this._allUsers[to] = user;
@@ -58,3 +67,4 @@ var UserManager = (function () {
     return UserManager;
 }());
 exports.UserManager = UserManager;
+//# sourceMappingURL=UserManager.js.map

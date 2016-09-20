@@ -6,14 +6,16 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var Parser = require('dab.irc.parser/src');
 var Core = require('dab.irc.core/src');
+var ChannelManager_1 = require('./ChannelManager');
 var ManagedServer = (function (_super) {
     __extends(ManagedServer, _super);
-    function ManagedServer(host, connection, chanManager, parser) {
+    function ManagedServer(context, connection, parser, chanManager) {
         var _this = this;
-        if (parser === void 0) { parser = null; }
-        _super.call(this, host, connection, parser);
+        if (parser === void 0) { parser = void 0; }
+        if (chanManager === void 0) { chanManager = new ChannelManager_1.ChannelManager(); }
+        _super.call(this, context.host, connection, parser);
         this._manager = chanManager;
-        this._manager.register(this);
+        this._context = context;
         this.on(Parser.Events.JOIN, function (s, m) {
             var msg = m;
             var from = msg.from;
@@ -32,10 +34,20 @@ var ManagedServer = (function (_super) {
             _this.modeChanged(msg.modes);
         });
         this.on(Parser.Numerics.WHOISUSER, function (s, m) {
-            _this._me.ident = m.tokenized[4];
-            _this._me.name = m.message;
-            _this._me.host = m.tokenized[5];
+            if (m.tokenized[2] == m.tokenized[3]) {
+                _this.me.nick = m.tokenized[3];
+                _this.me.ident = m.tokenized[4];
+                _this.me.name = m.message;
+                _this.me.host = m.tokenized[5];
+            }
         });
+        this.on(Parser.Events.NICK, function (s, m) {
+            var msg = m;
+            if (msg.from.nick == _this.me.nick) {
+                _this.me.nick = msg.destination.nick;
+            }
+        });
+        this._manager.register(this);
     }
     Object.defineProperty(ManagedServer.prototype, "channels", {
         get: function () {
@@ -53,7 +65,7 @@ var ManagedServer = (function (_super) {
     });
     Object.defineProperty(ManagedServer.prototype, "me", {
         get: function () {
-            return this._me;
+            return this._context.me;
         },
         enumerable: true,
         configurable: true
@@ -61,39 +73,18 @@ var ManagedServer = (function (_super) {
     ManagedServer.prototype.modeChanged = function (modes) {
         for (var i in modes) {
             var mode = modes[i];
-            if (mode.type == Core.ModeType.UMode) {
+            if (mode.type != Core.ModeType.UMode) {
                 continue;
             }
             if (mode.change == Core.ModeChangeType.Adding) {
-                this.addMode(mode);
+                mode.addToList(this.me.modes);
             }
             else {
-                this.removeMode(mode);
+                mode.removeFromList(this.me.modes);
             }
         }
-    };
-    ManagedServer.prototype.removeMode = function (mode) {
-        var ind = this.findMode(mode);
-        if (ind != -1) {
-            this._me.modes.splice(ind, 1);
-        }
-    };
-    ManagedServer.prototype.addMode = function (mode) {
-        if (this.findMode(mode) == -1) {
-            this._me.modes.push(mode);
-        }
-    };
-    ManagedServer.prototype.findMode = function (mode) {
-        var index = -1;
-        var res = this._me.modes.filter(function (v, i, a) {
-            if (v.character == mode.character && v.argument == mode.argument) {
-                index = i;
-                return true;
-            }
-            return false;
-        });
-        return (res.length > 0) ? index : -1;
     };
     return ManagedServer;
 }(Parser.ParserServer));
 exports.ManagedServer = ManagedServer;
+//# sourceMappingURL=ManagedServer.js.map

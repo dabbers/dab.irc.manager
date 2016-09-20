@@ -8,3 +8,4 @@ __export(require('./ManagedChannelUser'));
 __export(require('./ManagedServer'));
 __export(require('./ManagedUser'));
 __export(require('./UserManager'));
+//# sourceMappingURL=index.js.map

@@ -30,38 +30,11 @@ export class ManagedUser extends Core.User {
             }
 
             if (mode.change == Core.ModeChangeType.Adding) {
-                this.addMode(chan, mode);
+                mode.addToList(this.channels[chan]);
             }
             else {
-                this.removeMode(chan, mode);
+                mode.removeFromList(this.channels[chan]);
             }
         }
-    }
-
-    private removeMode(chan:string, mode: Core.Mode) {
-        let ind = this.findMode(chan, mode);
-        if (ind != -1) {
-            this.channels[chan].splice(ind, 1);
-        }
-    }
-
-    private addMode(chan:string, mode: Core.Mode) {
-        if (this.findMode(chan, mode) == -1) {
-            this.channels[chan].push(mode);
-        }
-    }
-
-    // Finds the mode character and argument if it exists. Returns the index for it. -1 if not found.
-    findMode(chan:string, mode: Core.Mode) : number {
-        let index = -1;
-        let res = this.channels[chan].filter( (v, i, a) => {
-            if (v.character == mode.character && v.argument == mode.argument) {
-                index = i;
-                return true;
-            }
-            return false;
-        });
-
-        return (res.length > 0) ? index : -1;
     }
 }

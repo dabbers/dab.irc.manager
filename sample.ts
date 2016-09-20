@@ -4,6 +4,7 @@ import tls = require('tls');
 import {ParserServer} from 'dab.irc.parser/src/ParserServer';
 import * as Core from 'dab.irc.core/src';
 import {ConversationMessage} from 'dab.irc.parser/src/MessageTypes/ConversationMessage';
+import * as Manager from './src';
 
 class SampleIRCContext implements Core.IConnectionContext {
     connection: Core.Connection;
@@ -36,12 +37,13 @@ class SampleIRCContext implements Core.IConnectionContext {
 
     logSentMessages: boolean = true;
     logReceivedMessages: boolean = true;
+    channelPrefixes:string[];
 }
 
 var ctx = new SampleIRCContext();
 
 var con = new Core.Connection();
-var server = new ParserServer(ctx.host, con);
+var server = new Manager.ManagedServer(ctx, con);
 server.on("PRIVMSG", (s:ParserServer, m:Core.Message) => {
     var msg = <ConversationMessage>m;
     console.log(msg);

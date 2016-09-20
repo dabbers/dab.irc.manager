@@ -1,9 +1,13 @@
 "use strict";
 var Core = require('dab.irc.core/src');
 var Parser = require('dab.irc.parser/src');
+var UserManager_1 = require('./UserManager');
 var ManagedChannel_1 = require('./ManagedChannel');
 var ChannelManager = (function () {
-    function ChannelManager() {
+    function ChannelManager(userManager) {
+        if (userManager === void 0) { userManager = new UserManager_1.UserManager(); }
+        this._channels = [];
+        this._users = userManager;
     }
     Object.defineProperty(ChannelManager.prototype, "users", {
         get: function () {
@@ -20,14 +24,18 @@ var ChannelManager = (function () {
         configurable: true
     });
     ChannelManager.prototype.register = function (server) {
-        server.on(Parser.Events.JOIN, this.bindJoin);
-        server.on(Parser.Events.PART, this.bindPart);
-        server.on(Parser.Events.MODE, this.bindMode);
+        server.on(Parser.Events.JOIN, this.bindJoin.bind(this));
+        server.on(Parser.Events.PART, this.bindPart.bind(this));
+        server.on(Parser.Events.MODE, this.bindMode.bind(this));
+        server.on(Parser.Numerics.NAMREPLY, this.bindNames.bind(this));
+        server.on(Parser.Events.NICK, this.bindNickChange.bind(this));
     };
     ChannelManager.prototype.unregister = function (server) {
         server.removeListener(Parser.Events.JOIN, this.bindJoin);
         server.removeListener(Parser.Events.PART, this.bindJoin);
         server.removeListener(Parser.Events.MODE, this.bindMode);
+        server.removeListener(Parser.Numerics.NAMREPLY, this.bindNames);
+        server.removeListener(Parser.Events.NICK, this.bindNickChange);
     };
     ChannelManager.prototype.join = function (channel) {
         if (this._channels.filter(function (v, id, ar) { return v.display.toLocaleLowerCase() == channel.display.toLocaleLowerCase(); }).length > 0) {
@@ -40,6 +48,10 @@ var ChannelManager = (function () {
             this._channels.push(new ManagedChannel_1.ManagedChannel(channel.display, this));
         }
         return true;
+    };
+    ChannelManager.prototype.bindNickChange = function (s, m) {
+        var msg = m;
+        this._users.rename(msg.from.nick, msg.destination.nick);
     };
     ChannelManager.prototype.bindJoin = function (s, m) {
         var msg = m;
@@ -58,6 +70,12 @@ var ChannelManager = (function () {
             }
         }
     };
+    ChannelManager.prototype.bindNames = function (s, m) {
+        var msg = m;
+        for (var i in msg.users) {
+            this._users.nameAdd(msg.users[i], msg.destination);
+        }
+    };
     ChannelManager.prototype.part = function (channel) {
         var i = 0;
         for (i in this._channels) {
@@ -70,3 +88,4 @@ var ChannelManager = (function () {
     return ChannelManager;
 }());
 exports.ChannelManager = ChannelManager;
+//# sourceMappingURL=ChannelManager.js.map

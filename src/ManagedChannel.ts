@@ -40,39 +40,12 @@ export class ManagedChannel extends Core.Channel {
             }
 
             if (mode.change == Core.ModeChangeType.Adding) {
-                this.addMode(mode);
+                mode.addToList(this._modes);
             }
             else {
-                this.removeMode(mode);
+                mode.removeFromList(this._modes);
             }
         }
-    }
-
-    private removeMode(mode: Core.Mode) {
-        let ind = this.findMode(mode);
-        if (ind != -1) {
-            this._modes.splice(ind, 1);
-        }
-    }
-
-    private addMode(mode: Core.Mode) {
-        if (this.findMode(mode) == -1) {
-            this._modes.push(mode);
-        }
-    }
-
-    // Finds the mode character and argument if it exists. Returns the index for it. -1 if not found.
-    findMode(mode: Core.Mode) : number {
-        let index = -1;
-        let res = this._modes.filter( (v, i, a) => {
-            if (v.character == mode.character && v.argument == mode.argument) {
-                index = i;
-                return true;
-            }
-            return false;
-        });
-
-        return (res.length > 0) ? index : -1;
     }
 
     private _users : Core.User[];

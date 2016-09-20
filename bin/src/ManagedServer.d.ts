@@ -8,11 +8,8 @@ export declare class ManagedServer extends Parser.ParserServer {
         [key: string]: ManagedUser;
     };
     me: Core.User;
-    constructor(host: string, connection: Core.Connection, chanManager: ChannelManager, parser?: Parser.DynamicParser);
+    constructor(context: Core.IConnectionContext, connection: Core.Connection, parser?: Parser.DynamicParser, chanManager?: ChannelManager);
     modeChanged(modes: Core.Mode[]): void;
-    private removeMode(mode);
-    private addMode(mode);
-    findMode(mode: Core.Mode): number;
     private _manager;
-    private _me;
+    private _context;
 }

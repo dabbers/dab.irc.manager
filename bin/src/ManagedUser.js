@@ -26,39 +26,18 @@ var ManagedUser = (function (_super) {
     ManagedUser.prototype.modeChanged = function (chan, modes) {
         for (var i in modes) {
             var mode = modes[i];
-            if (mode.type == Core.ModeType.UMode) {
+            if (mode.type != Core.ModeType.ChannelUser) {
                 continue;
             }
             if (mode.change == Core.ModeChangeType.Adding) {
-                this.addMode(chan, mode);
+                mode.addToList(this.channels[chan]);
             }
             else {
-                this.removeMode(chan, mode);
+                mode.removeFromList(this.channels[chan]);
             }
         }
-    };
-    ManagedUser.prototype.removeMode = function (chan, mode) {
-        var ind = this.findMode(chan, mode);
-        if (ind != -1) {
-            this.channels[chan].splice(ind, 1);
-        }
-    };
-    ManagedUser.prototype.addMode = function (chan, mode) {
-        if (this.findMode(chan, mode) == -1) {
-            this.channels[chan].push(mode);
-        }
-    };
-    ManagedUser.prototype.findMode = function (chan, mode) {
-        var index = -1;
-        var res = this.channels[chan].filter(function (v, i, a) {
-            if (v.character == mode.character && v.argument == mode.argument) {
-                index = i;
-                return true;
-            }
-            return false;
-        });
-        return (res.length > 0) ? index : -1;
     };
     return ManagedUser;
 }(Core.User));
 exports.ManagedUser = ManagedUser;
+//# sourceMappingURL=ManagedUser.js.map

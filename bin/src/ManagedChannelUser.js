@@ -22,3 +22,4 @@ var ManagedChannelUser = (function (_super) {
     return ManagedChannelUser;
 }(ManagedUser_1.ManagedUser));
 exports.ManagedChannelUser = ManagedChannelUser;
+//# sourceMappingURL=ManagedChannelUser.js.map

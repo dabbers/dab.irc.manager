@@ -1,3 +1,5 @@
+require('source-map-support').install();
+
 import * as basicTests from './Tests/basicTests';
 import * as functionalTests from './Tests/functionalTests';
 import tsUnit = require('tsunit.external/tsUnit');

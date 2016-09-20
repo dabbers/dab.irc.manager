@@ -27,11 +27,9 @@ class testSocket implements Core.ISocket {
     callback : Function;
 }
 
-
-
 class SampleIRCContext implements Core.IConnectionContext {
     connection: Core.Connection;
-    me: Core.User = new Core.User("dabirc", "testident", null);
+    me: Core.User = null;
     
     host: string = "irc.dab.biz";
     port: number = 6697;
@@ -43,7 +41,6 @@ class SampleIRCContext implements Core.IConnectionContext {
     onConnect : () => any;
 
     constructor() {
-        this.me.name = "Real Name";
     }
 
     commandsFound : {[cmd: string ] :  number} = {};
@@ -63,8 +60,10 @@ class SampleIRCContext implements Core.IConnectionContext {
         c.write("USER " + this.me.ident + " 8 * :" + this.me.name);
     }
 
-    logSentMessages: boolean;
-    logReceivedMessages: boolean;
+    logSentMessages: boolean = true;
+    logReceivedMessages: boolean = true;
+    
+    channelPrefixes:string[];
 }
 
 
@@ -90,7 +89,7 @@ export class FunctionalTests extends tsUnit.TestClass {
             ":dabirc2!ident@host MODE #test +v dabirc\r\n" +
             ":dabirc!baditp@127.0.0.0 NICK :dabircA\r\n" +
             ":dabirc2!ident@host MODE #test -v dabircA\r\n" +
-            ":dabircA!baditp@127.0.0.0 NICK :dabircB\r\n" +
+            ":dabircA!baditp@127.0.0.0 NICK :dabirc\r\n" +
             ":cribad!ident@127.0.0.0 JOIN :#test\r\n" +
             ":dabirc!baditp@127.0.0.0 PART #test :Goodbye message\r\n" /*+
             "\r\n" +
@@ -107,7 +106,11 @@ export class FunctionalTests extends tsUnit.TestClass {
         let connection = new Core.Connection();
         let manager = new Manager.ChannelManager();
 
-        let svr = new Manager.ManagedServer("blah", connection, null, manager);
+        let me = new Core.User("dabirc", "dabitp", null);
+        me.name = "dab.irc library";
+        ctx.me = me;
+
+        let svr = new Manager.ManagedServer(ctx, connection, undefined, manager);
 
         svr.on(Parser.Events.JOIN, (s:Parser.ParserServer, m:Core.Message) => {
             let msg = <Parser.ChannelUserChangeMessage>m;

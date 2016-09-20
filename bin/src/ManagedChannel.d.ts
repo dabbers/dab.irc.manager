@@ -12,9 +12,6 @@ export declare class ManagedChannel extends Core.Channel {
     excepts: Core.Mode[];
     constructor(display: string, manager: ChannelManager, tolower?: boolean);
     modeChanged(modes: Core.Mode[]): void;
-    private removeMode(mode);
-    private addMode(mode);
-    findMode(mode: Core.Mode): number;
     private _users;
     private _modes;
     private _manager;

@@ -11,6 +11,7 @@ export declare class UserManager {
     byChannelDictionary(channel: Core.Channel): {
         [key: string]: ManagedChannelUser;
     };
+    nameAdd(who: Core.User | ManagedUser, channel: Core.Channel): void;
     join(msg: Parser.ChannelUserChangeMessage, channel: Core.Channel): void;
     part(msg: Parser.ChannelUserChangeMessage, channel: Core.Channel): void;
     rename(from: string, to: string): void;

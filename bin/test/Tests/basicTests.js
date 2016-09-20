@@ -18,3 +18,4 @@ var BasicTests = (function (_super) {
     return BasicTests;
 }(tsUnit.TestClass));
 exports.BasicTests = BasicTests;
+//# sourceMappingURL=basicTests.js.map

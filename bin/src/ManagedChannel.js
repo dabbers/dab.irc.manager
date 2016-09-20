@@ -58,35 +58,14 @@ var ManagedChannel = (function (_super) {
                 continue;
             }
             if (mode.change == Core.ModeChangeType.Adding) {
-                this.addMode(mode);
+                mode.addToList(this._modes);
             }
             else {
-                this.removeMode(mode);
+                mode.removeFromList(this._modes);
             }
         }
-    };
-    ManagedChannel.prototype.removeMode = function (mode) {
-        var ind = this.findMode(mode);
-        if (ind != -1) {
-            this._modes.splice(ind, 1);
-        }
-    };
-    ManagedChannel.prototype.addMode = function (mode) {
-        if (this.findMode(mode) == -1) {
-            this._modes.push(mode);
-        }
-    };
-    ManagedChannel.prototype.findMode = function (mode) {
-        var index = -1;
-        var res = this._modes.filter(function (v, i, a) {
-            if (v.character == mode.character && v.argument == mode.argument) {
-                index = i;
-                return true;
-            }
-            return false;
-        });
-        return (res.length > 0) ? index : -1;
     };
     return ManagedChannel;
 }(Core.Channel));
 exports.ManagedChannel = ManagedChannel;
+//# sourceMappingURL=ManagedChannel.js.map

@@ -1,4 +1,5 @@
 "use strict";
+require('source-map-support').install();
 var basicTests = require('./Tests/basicTests');
 var functionalTests = require('./Tests/functionalTests');
 var tsUnit = require('tsunit.external/tsUnit');
@@ -18,3 +19,4 @@ if (test2.errors.length > 0) {
 else {
     console.log("functionalTests PASSED\r\n");
 }
+//# sourceMappingURL=index.js.map

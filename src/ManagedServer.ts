@@ -13,15 +13,15 @@ export class ManagedServer extends Parser.ParserServer {
     }
 
     get me() : Core.User {
-        return this._me;
+        return this._context.me;
     }
 
-    constructor(host: string, connection: Core.Connection, parser:Parser.DynamicParser = null, chanManager : ChannelManager = new ChannelManager()) {
-        super(host, connection, parser);
+    constructor(context : Core.IConnectionContext, connection: Core.Connection, parser:Parser.DynamicParser = void 0, chanManager : ChannelManager = new ChannelManager()) {
+        super(context.host, connection, parser);
 
         this._manager = chanManager;
-        this._manager.register(this);
-        
+        this._context = context;
+
         this.on(Parser.Events.JOIN, (s : Parser.ParserServer, m : Core.Message) => {
             let msg = <Parser.ChannelUserChangeMessage>m;
             var from = <Core.User>msg.from;
@@ -44,12 +44,26 @@ export class ManagedServer extends Parser.ParserServer {
             this.modeChanged(msg.modes);
         });
 
-        // :navi.orbital.link 311 badddddd dab dabitp dab.biz * :David
+        // :<sender, not you> 311 <Your Nick> <Requested Nick> <Ident> <Host> * :<Name>
         this.on(Parser.Numerics.WHOISUSER, (s:Parser.ParserServer, m:Core.Message) => {
-            this._me.ident = m.tokenized[4];
-            this._me.name = m.message;
-            this._me.host = m.tokenized[5];
+            if (m.tokenized[2] == m.tokenized[3]) {
+                this.me.nick = m.tokenized[3];
+                this.me.ident = m.tokenized[4];
+                this.me.name = m.message;
+                this.me.host = m.tokenized[5];
+            }
         });
+        
+        this.on(Parser.Events.NICK, (s:Parser.ParserServer, m:Core.Message) => {
+            let msg = <Parser.NickChangeMessage>m;
+            if ((<Core.User>msg.from).nick == this.me.nick) {
+                this.me.nick = msg.destination.nick;
+            }
+        });
+
+        // Register the manager last, so the manger's events get called after our own. We do some setup
+        // here that needs to be done before the manager does its thing.
+        this._manager.register(this);
     }
 
 
@@ -62,41 +76,14 @@ export class ManagedServer extends Parser.ParserServer {
             }
 
             if (mode.change == Core.ModeChangeType.Adding) {
-                this.addMode(mode);
+                mode.addToList(this.me.modes);
             }
             else {
-                this.removeMode(mode);
+                mode.removeFromList(this.me.modes);
             }
         }
-    }
-
-    private removeMode(mode: Core.Mode) {
-        let ind = this.findMode(mode);
-        if (ind != -1) {
-            this._me.modes.splice(ind, 1);
-        }
-    }
-
-    private addMode(mode: Core.Mode) {
-        if (this.findMode(mode) == -1) {
-            this._me.modes.push(mode);
-        }
-    }
-
-    // Finds the mode character and argument if it exists. Returns the index for it. -1 if not found.
-    findMode(mode: Core.Mode) : number {
-        let index = -1;
-        let res = this._me.modes.filter( (v, i, a) => {
-            if (v.character == mode.character && v.argument == mode.argument) {
-                index = i;
-                return true;
-            }
-            return false;
-        });
-
-        return (res.length > 0) ? index : -1;
     }
 
     private _manager : ChannelManager;
-    private _me : Core.User;
+    private _context : Core.IConnectionContext
 }
