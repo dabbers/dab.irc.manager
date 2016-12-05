@@ -1,59 +1,43 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var Core = require('dab.irc.core/src');
-var ManagedChannel = (function (_super) {
-    __extends(ManagedChannel, _super);
-    function ManagedChannel(display, manager, tolower) {
-        if (tolower === void 0) { tolower = true; }
-        _super.call(this, display, tolower);
+const Core = require('dab.irc.core/src');
+class ManagedChannel extends Core.Channel {
+    constructor(display, manager, tolower = true) {
+        super(display, tolower);
+        this._references = 0;
         this._manager = manager;
+        this.joinMe();
     }
-    Object.defineProperty(ManagedChannel.prototype, "users", {
-        get: function () {
-            return this._manager.users.byChannelDictionary(this);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ManagedChannel.prototype.userList = function (fncSort) {
-        if (fncSort === void 0) { fncSort = undefined; }
+    get users() {
+        return this._manager.users.byChannelDictionary(this);
+    }
+    userList(fncSort = undefined) {
         return this._manager.users.byChannelArray(this).sort(fncSort);
-    };
-    Object.defineProperty(ManagedChannel.prototype, "modes", {
-        get: function () {
-            return this._modes;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ManagedChannel.prototype, "bans", {
-        get: function () {
-            return this._modes.filter(function (v, i, a) { return v.character == 'b'; });
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ManagedChannel.prototype, "invites", {
-        get: function () {
-            return this._modes.filter(function (v, i, a) { return v.character == 'I'; });
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ManagedChannel.prototype, "excepts", {
-        get: function () {
-            return this._modes.filter(function (v, i, a) { return v.character == 'e'; });
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ManagedChannel.prototype.modeChanged = function (modes) {
+    }
+    get modes() {
+        return this._modes;
+    }
+    get bans() {
+        return this._modes.filter((v, i, a) => v.character == 'b');
+    }
+    get invites() {
+        return this._modes.filter((v, i, a) => v.character == 'I');
+    }
+    get excepts() {
+        return this._modes.filter((v, i, a) => v.character == 'e');
+    }
+    get references() {
+        return this._references;
+    }
+    joinMe() {
+        this._references++;
+    }
+    partMe() {
+        this._references--;
+        return this._references <= 0;
+    }
+    modeChanged(modes) {
         for (var i in modes) {
-            var mode = modes[i];
+            let mode = modes[i];
             if (mode.type == Core.ModeType.UMode) {
                 continue;
             }
@@ -64,8 +48,7 @@ var ManagedChannel = (function (_super) {
                 mode.removeFromList(this._modes);
             }
         }
-    };
-    return ManagedChannel;
-}(Core.Channel));
+    }
+}
 exports.ManagedChannel = ManagedChannel;
 //# sourceMappingURL=ManagedChannel.js.map

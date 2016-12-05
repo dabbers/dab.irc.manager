@@ -39,10 +39,11 @@ export class UserManager {
     }
 
     nameAdd(who:Core.User|ManagedUser, channel:Core.Channel) {
+        console.log(who.toString());
         if (!this._allUsers[who.nick]) {
             this._allUsers[who.nick] = (who instanceof ManagedUser ? who : new ManagedUser(who.nick, who.ident, who.host));
         }
-
+        
         // We check if we already join the channel inside the join method. No need to double check here.
         this._allUsers[who.nick].join(channel.display);
         this._allUsers[who.nick].modeChanged(channel.display, who.modes);
@@ -72,15 +73,13 @@ export class UserManager {
     rename(from: string, to: string) {
         let user = this._allUsers[from];
         
-        if (!user) throw new Error("Why is there no user found during a nick change? " + from + " to " + to);
+        if (!user) throw new Error("Why is there no user found during a nick change? " + from + " to " + to + ". Nicks: " + Object.keys(this._allUsers).join(","));
 
         delete this._allUsers[from];
 
         user.nick = to;
         this._allUsers[to] = user;
-    }
-
-    
+    }    
 
     private _allUsers : { [key:string] : ManagedUser } = {};
 }

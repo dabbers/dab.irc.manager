@@ -3,8 +3,11 @@ import * as Parser from 'dab.irc.parser/src';
 import { UserManager } from './UserManager';
 import { ManagedChannel } from './ManagedChannel';
 export declare class ChannelManager {
-    users: UserManager;
-    channels: ManagedChannel[];
+    readonly users: UserManager;
+    readonly channels: ManagedChannel[];
+    readonly channel: {
+        [key: string]: ManagedChannel;
+    };
     constructor(userManager?: UserManager);
     register(server: Parser.ParserServer): void;
     unregister(server: Parser.ParserServer): void;
@@ -17,4 +20,5 @@ export declare class ChannelManager {
     part(channel: Core.Channel): void;
     private _users;
     private _channels;
+    private _channelsProxy;
 }

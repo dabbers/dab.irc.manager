@@ -1,63 +1,54 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var tsUnit = require('tsunit.external/tsUnit');
-var Parser = require('dab.irc.parser/src/');
-var Core = require('dab.irc.core/src');
-var Manager = require('../../src');
-var testSocket = (function () {
-    function testSocket(cb) {
+const tsUnit = require('tsunit.external/tsUnit');
+const Parser = require('dab.irc.parser/src/');
+const Core = require('dab.irc.core/src');
+const Manager = require('../../src');
+class testSocket {
+    constructor(cb) {
         process.nextTick(cb);
     }
-    testSocket.prototype.setEncoding = function (enc) {
-    };
-    testSocket.prototype.on = function (event, cb) {
+    setEncoding(enc) {
+    }
+    on(event, cb) {
         if (event == "data")
             this.callback = cb;
-    };
-    testSocket.prototype.write = function (data) {
-        this.callback(":user WROTE " + data + "\r\n");
-    };
-    testSocket.prototype.disconnect = function () {
-    };
-    return testSocket;
-}());
-var SampleIRCContext = (function () {
-    function SampleIRCContext() {
-        var _this = this;
+    }
+    write(data) {
+        process.nextTick(function (cb) { return function () { cb(":user WROTE " + data + "\r\n"); }; }(this.callback));
+    }
+    disconnect() {
+    }
+}
+class SampleIRCContext {
+    constructor() {
         this.me = null;
         this.host = "irc.dab.biz";
         this.port = 6697;
         this.ssl = true;
         this.rejectUnauthedCerts = false;
         this.commandsFound = {};
-        this.dataCallback = function (d) {
-            _this.commandsFound[d.command] = (_this.commandsFound[d.command] || 0) + 1;
+        this.dataCallback = (d) => {
+            this.commandsFound[d.command] = (this.commandsFound[d.command] || 0) + 1;
         };
-        this.connectionEstablishedCallback = function (c) {
-            c.write("NICK " + _this.me.nick);
-            c.write("USER " + _this.me.ident + " 8 * :" + _this.me.name);
+        this.connectionEstablishedCallback = (c) => {
+            c.write("NICK " + this.me.nick);
+            c.write("USER " + this.me.ident + " 8 * :" + this.me.name);
         };
-        this.logSentMessages = true;
-        this.logReceivedMessages = true;
+        this.logSentMessages = false;
+        this.logReceivedMessages = false;
     }
-    SampleIRCContext.prototype.createConnection = function (cb) {
+    createConnection(cb) {
         this.socket = new testSocket(cb);
         return this.socket;
-    };
-    return SampleIRCContext;
-}());
-var FunctionalTests = (function (_super) {
-    __extends(FunctionalTests, _super);
-    function FunctionalTests() {
-        _super.apply(this, arguments);
     }
-    FunctionalTests.prototype.endToEndTest = function () {
-        var _this = this;
-        var data = ":kira.orbital.link NOTICE AUTH :*** Looking up your hostname...\r\n" +
+}
+class FunctionalTests extends tsUnit.TestClass {
+    constructor() {
+        super(...arguments);
+        this.endToEndJoinCount = 0;
+    }
+    endToEndTest() {
+        let data = ":kira.orbital.link NOTICE AUTH :*** Looking up your hostname...\r\n" +
             ":servr 001 dabirc :Welcome to the Orbital Link IRC Network dabirc!baditp@127.0.0.0\r\n" +
             ":servr 002 dabirc :Your host is servr, running version Unreal3.2.10.5\r\n" +
             ":servr 003 dabirc :This server was created Sat Sep 12 2015 at 04:46:47 EDT\r\n" +
@@ -78,28 +69,35 @@ var FunctionalTests = (function (_super) {
             ":dabircA!baditp@127.0.0.0 NICK :dabirc\r\n" +
             ":cribad!ident@127.0.0.0 JOIN :#test\r\n" +
             ":dabirc!baditp@127.0.0.0 PART #test :Goodbye message\r\n";
-        var ctx = new SampleIRCContext();
-        var connection = new Core.Connection();
-        var manager = new Manager.ChannelManager();
-        var me = new Core.User("dabirc", "dabitp", null);
+        let ctx = new SampleIRCContext();
+        let connection = new Core.Connection();
+        let manager = new Manager.ChannelManager();
+        let me = new Core.User("dabirc", "dabitp", null);
         me.name = "dab.irc library";
         ctx.me = me;
-        var svr = new Manager.ManagedServer(ctx, connection, undefined, manager);
-        svr.on(Parser.Events.JOIN, function (s, m) {
-            var msg = m;
-            var length = Object.keys(manager.users.all).length;
-            if (msg.from.display == "dabirc!dabitp@127.0.0.1") {
-                _this.areIdentical(1, length);
+        let svr = new Manager.ManagedServer("test", ctx, connection, undefined, manager);
+        svr.on(Parser.Events.JOIN, (s, m) => {
+            let msg = m;
+            let length = Object.keys(manager.users.all).length;
+            if (msg.from.display == "dabirc!baditp@127.0.0.0") {
+                this.areIdentical(1, length);
             }
             else {
-                _this.areIdentical(4, length);
+                this.areIdentical(4, length);
             }
+        });
+        svr.on(Parser.Events.PART, (s, m) => {
+            this.areIdentical(m.from.display, "dabirc!baditp@127.0.0.0");
+        });
+        svr.on(Parser.ExEvent.create(Parser.Events.JOIN, "#test"), (s, m) => {
+            this.endToEndJoinCount++;
         });
         ctx.dataCallback = svr.dataReceived;
         connection.init(ctx);
         ctx.socket.callback(data);
-    };
-    return FunctionalTests;
-}(tsUnit.TestClass));
+        this.areIdentical(2, this.endToEndJoinCount, "Join count for specialized join callback not equal");
+        this.areIdentical(0, Object.keys(manager.channels).length);
+    }
+}
 exports.FunctionalTests = FunctionalTests;
 //# sourceMappingURL=functionalTests.js.map

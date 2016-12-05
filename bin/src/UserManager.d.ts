@@ -5,7 +5,7 @@ import * as Parser from 'dab.irc.parser/src';
 export declare class UserManager {
     byNick(nick: string): ManagedUser;
     byChannelArray(channel: Core.Channel): ManagedChannelUser[];
-    all: {
+    readonly all: {
         [key: string]: ManagedUser;
     };
     byChannelDictionary(channel: Core.Channel): {

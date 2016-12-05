@@ -11,8 +11,8 @@ export class ManagedChannelUser extends ManagedUser {
     }
     
     get modes() : Core.Mode[] {
-        // DevNote: Should we just associate the Mode[] object? Is this lookup possibly bad for perf?
-        // Is there a situation where the channels object might update its array object?
+        // DevNote: Should we just associate the Mode[] ref instead of storing channel string? Is this lookup 
+        // possibly bad for perf? Is there a situation where the channels object might update its array object? (huh?)
         // I think lookup perf shouldn't be an issue. A user will be in < 75 channels on average.
         return this.channels[this.channel];
     }

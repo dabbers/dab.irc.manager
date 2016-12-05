@@ -1,10 +1,10 @@
 "use strict";
 require('source-map-support').install();
-var basicTests = require('./Tests/basicTests');
-var functionalTests = require('./Tests/functionalTests');
-var tsUnit = require('tsunit.external/tsUnit');
-var test = new tsUnit.Test(basicTests).run();
-var test2 = new tsUnit.Test(functionalTests).run();
+const basicTests = require('./Tests/basicTests');
+const functionalTests = require('./Tests/functionalTests');
+const tsUnit = require('tsunit.external/tsUnit');
+let test = new tsUnit.Test(basicTests).run();
+let test2 = new tsUnit.Test(functionalTests).run();
 if (test.errors.length > 0) {
     console.log("basicTests ERRORS\r\n");
     console.log(test.errors);

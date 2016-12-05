@@ -43,7 +43,7 @@ class SampleIRCContext implements Core.IConnectionContext {
 var ctx = new SampleIRCContext();
 
 var con = new Core.Connection();
-var server = new Manager.ManagedServer(ctx, con);
+var server = new Manager.ManagedServer("test", ctx, con);
 server.on("PRIVMSG", (s:ParserServer, m:Core.Message) => {
     var msg = <ConversationMessage>m;
     console.log(msg);

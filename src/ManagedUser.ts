@@ -7,18 +7,19 @@ export class ManagedUser extends Core.User {
     join(chan: string) {
         let channel = chan.toLocaleLowerCase();
         
-        if (this.channels[chan]) {
-            // Channel already exists
-            return;
+        // We depend on this check in UserManager
+        if (this.channels[chan] === undefined) {
+            // Channel doesn't exist yet
+            this.channels[channel] = [];
         }
-
-        this.channels[channel] = [];;
     }
 
     part(chan: string) {
         let channel = chan.toLocaleLowerCase();
         
-        delete this.channels[channel];
+        // We depend on this check in UserManager
+        if (this.channels[channel])
+            delete this.channels[channel];
     }
 
     modeChanged(chan:string, modes: Core.Mode[]) {
@@ -36,5 +37,10 @@ export class ManagedUser extends Core.User {
                 mode.removeFromList(this.channels[chan]);
             }
         }
+    }
+
+    
+    toString():string {
+        return "[ManagedUser " + this.display + "]";
     }
 }

@@ -1,78 +1,125 @@
 "use strict";
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var Parser = require('dab.irc.parser/src');
-var Core = require('dab.irc.core/src');
-var ChannelManager_1 = require('./ChannelManager');
-var ManagedServer = (function (_super) {
-    __extends(ManagedServer, _super);
-    function ManagedServer(context, connection, parser, chanManager) {
-        var _this = this;
-        if (parser === void 0) { parser = void 0; }
-        if (chanManager === void 0) { chanManager = new ChannelManager_1.ChannelManager(); }
-        _super.call(this, context.host, connection, parser);
+const Parser = require('dab.irc.parser/src');
+const Core = require('dab.irc.core/src');
+const ChannelManager_1 = require('./ChannelManager');
+class ManagedServer extends Parser.ParserServer {
+    constructor(alias, context, connection, parser = void 0, chanManager = new ChannelManager_1.ChannelManager()) {
+        super(context, connection, parser);
+        this.dataReceived = (data) => {
+            let cb = (s, m) => {
+                if (!(m instanceof Parser.NickChangeMessage)) {
+                    this.commonMessageResolution(m);
+                }
+                if (m instanceof Parser.ChannelUserChangeMessage) {
+                    let chan = this.channel[m.destination.display];
+                    if (chan) {
+                        m.updateDestinationReference(chan);
+                    }
+                }
+                else if (m instanceof Parser.ConversationMessage) {
+                    let d = m.destination instanceof Core.User ? this.users[m.destination.nick] : this.channel[m.destination.display];
+                    if (d) {
+                        m.updateDestinationReference(d);
+                    }
+                }
+                else if (m instanceof Parser.ModeChangeMessage) {
+                    let d = m.destination instanceof Core.User ? this.users[m.destination.nick] : this.channel[m.destination.display];
+                    if (d) {
+                        m.updateDestinationReference(d);
+                    }
+                }
+                else if (m instanceof Parser.NamesMessage) {
+                    let d = m.destination instanceof Core.User ? this.users[m.destination.nick] : this.channel[m.destination.display];
+                    if (d) {
+                        m.updateDestinationReference(d);
+                    }
+                }
+                else if (m instanceof Parser.NickChangeMessage) {
+                    if (m.command == "NICK") {
+                        this._manager.bindNickChange(s, m);
+                    }
+                    let usr = this.users[m.destination.nick];
+                    m.updateDestinationReference(m.from);
+                }
+                else {
+                    throw new Error("Unknown message type passed in: " + m.toString());
+                }
+                this.emit(m.command, this, m);
+            };
+            if (!this._parser.parse(this, data, cb)) {
+                let cmd = data.command;
+                this.emit(data.command, this, data);
+            }
+        };
         this._manager = chanManager;
         this._context = context;
-        this.on(Parser.Events.JOIN, function (s, m) {
-            var msg = m;
+        this._alias = alias;
+        this.on(Parser.Events.PART, (s, m) => {
+            let msg = m;
             var from = msg.from;
-            if (from.nick == _this.me.nick) {
-                _this._manager.join(msg.destination);
-                _this.connection.write("MODE " + msg.destination.display + " +I");
-                _this.connection.write("MODE " + msg.destination.display + " +b");
-                _this.connection.write("MODE " + msg.destination.display + " +e");
+            if (from.nick == this.me.nick) {
+                this._manager.part(msg.destination);
             }
         });
-        this.on(Parser.Numerics.ENDOFMOTD, function (s, m) {
-            _this.connection.write("WHOIS " + m.tokenized[2]);
+        this.on(Parser.Events.JOIN, (s, m) => {
+            let msg = m;
+            var from = msg.from;
+            if (from.nick == this.me.nick) {
+                this._manager.join(msg.destination);
+                this.connection.write("MODE " + msg.destination.display + " +I");
+                this.connection.write("MODE " + msg.destination.display + " +b");
+                this.connection.write("MODE " + msg.destination.display + " +e");
+            }
         });
-        this.on(Parser.Events.MODE, function (s, m) {
-            var msg = m;
-            _this.modeChanged(msg.modes);
+        this.on(Parser.Numerics.ENDOFMOTD, (s, m) => {
+            this.connection.write("WHOIS " + m.tokenized[2]);
         });
-        this.on(Parser.Numerics.WHOISUSER, function (s, m) {
+        this.on(Parser.Numerics.ERR_NOMOTD, (s, m) => {
+            this.connection.write("WHOIS " + m.tokenized[2]);
+        });
+        this.on(Parser.Events.MODE, (s, m) => {
+            let msg = m;
+            this.modeChanged(msg.modes);
+        });
+        this.on(Parser.Numerics.WHOISUSER, (s, m) => {
             if (m.tokenized[2] == m.tokenized[3]) {
-                _this.me.nick = m.tokenized[3];
-                _this.me.ident = m.tokenized[4];
-                _this.me.name = m.message;
-                _this.me.host = m.tokenized[5];
+                this.me.nick = m.tokenized[3];
+                this.me.ident = m.tokenized[4];
+                this.me.name = m.message;
+                this.me.host = m.tokenized[5];
             }
         });
-        this.on(Parser.Events.NICK, function (s, m) {
-            var msg = m;
-            if (msg.from.nick == _this.me.nick) {
-                _this.me.nick = msg.destination.nick;
+        this.on(Parser.Events.NICK, (s, m) => {
+            let msg = m;
+            if (msg.from.nick == this.me.nick) {
+                this.me.nick = msg.destination.nick;
+            }
+        });
+        this.on(Parser.Numerics.ISUPPORT, (s, m) => {
+            if (this.attributes["CHANTYPES"]) {
+                this._context.channelPrefixes = this.attributes["CHANTYPES"].split("");
             }
         });
         this._manager.register(this);
     }
-    Object.defineProperty(ManagedServer.prototype, "channels", {
-        get: function () {
-            return this._manager.channels;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ManagedServer.prototype, "users", {
-        get: function () {
-            return this._manager.users.all;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ManagedServer.prototype, "me", {
-        get: function () {
-            return this._context.me;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ManagedServer.prototype.modeChanged = function (modes) {
+    get channels() {
+        return this._manager.channels;
+    }
+    get users() {
+        return this._manager.users.all;
+    }
+    get me() {
+        return this._context.me;
+    }
+    get channel() {
+        return this._manager.channel;
+    }
+    get alias() {
+        return this._alias;
+    }
+    modeChanged(modes) {
         for (var i in modes) {
-            var mode = modes[i];
+            let mode = modes[i];
             if (mode.type != Core.ModeType.UMode) {
                 continue;
             }
@@ -83,8 +130,14 @@ var ManagedServer = (function (_super) {
                 mode.removeFromList(this.me.modes);
             }
         }
-    };
-    return ManagedServer;
-}(Parser.ParserServer));
+    }
+    commonMessageResolution(m) {
+        if (m.from instanceof Core.User) {
+            let usr = this._manager.users.byNick(m.from.nick);
+            if (usr)
+                m.updateFromReference(usr);
+        }
+    }
+}
 exports.ManagedServer = ManagedServer;
 //# sourceMappingURL=ManagedServer.js.map

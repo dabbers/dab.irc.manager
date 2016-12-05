@@ -13,6 +13,10 @@ export class ChannelManager {
         return this._channels;
     }
 
+    get channel() : { [key:string] : ManagedChannel } {
+        return this._channelsProxy;
+    }
+
     constructor(userManager : UserManager = new UserManager()) {
         this._users = userManager;
     }
@@ -22,7 +26,9 @@ export class ChannelManager {
         server.on(Parser.Events.PART, this.bindPart.bind(this));
         server.on(Parser.Events.MODE, this.bindMode.bind(this));
         server.on(Parser.Numerics.NAMREPLY, this.bindNames.bind(this));
-        server.on(Parser.Events.NICK, this.bindNickChange.bind(this));
+        // We don't do nick listeners here so we can control the order of nick Events
+        // and their references
+        //server.on(Parser.Events.NICK, this.bindNickChange.bind(this));
     }
 
     unregister(server: Parser.ParserServer) {
@@ -30,7 +36,9 @@ export class ChannelManager {
         server.removeListener(Parser.Events.PART, this.bindJoin);
         server.removeListener(Parser.Events.MODE, this.bindMode);
         server.removeListener(Parser.Numerics.NAMREPLY, this.bindNames);
-        server.removeListener(Parser.Events.NICK, this.bindNickChange);
+        // We don't do nick listeners here so we can control the order of nick Events
+        // and their references
+        //server.removeListener(Parser.Events.NICK, this.bindNickChange);
     }
 
     // For when the connection joins a channel
@@ -68,7 +76,7 @@ export class ChannelManager {
     bindMode(s: Parser.ParserServer, m:Core.Message) {
         let msg = <Parser.ModeChangeMessage>m;
 
-        if (msg.target instanceof Core.Channel) {
+        if (msg.destination instanceof Core.Channel) {
             let ch = this._channels.filter((v,i,a) => v.display.toLocaleLowerCase() == s.display.toLocaleLowerCase());
 
             if (ch.length > 0) {
@@ -92,9 +100,20 @@ export class ChannelManager {
             }
         }
 
-        this._channels.splice(i,1);
+        let res = this._channels[i].partMe(); //.splice(i,1);
+        if (res) {
+            // no point keeping reference to a channel with stale data
+            this._channels.splice(i,1);
+        }
     }
 
     private _users : UserManager;
     private _channels : ManagedChannel[] = [];
+
+    // Lets you find a channel name by lower case without reproducing this code every time.
+    private _channelsProxy = new Proxy<{ [key:string] : ManagedChannel }>({}, {
+            get: (proxy, name) => {
+                return this._channels.filter( (c) => c.display.toLocaleLowerCase() == name.toString().toLocaleLowerCase())[0];
+            }
+        });
 }

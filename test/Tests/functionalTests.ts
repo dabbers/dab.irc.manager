@@ -17,7 +17,7 @@ class testSocket implements Core.ISocket {
     }
 
     write(data:  string) : void {
-        this.callback(":user WROTE " + data + "\r\n");
+        process.nextTick( function(cb:Function) { return function() {cb(":user WROTE " + data + "\r\n")} }(this.callback) );
     }
     
     disconnect() : void {
@@ -60,15 +60,15 @@ class SampleIRCContext implements Core.IConnectionContext {
         c.write("USER " + this.me.ident + " 8 * :" + this.me.name);
     }
 
-    logSentMessages: boolean = true;
-    logReceivedMessages: boolean = true;
+    logSentMessages: boolean = false;
+    logReceivedMessages: boolean = false;
     
     channelPrefixes:string[];
 }
 
 
 export class FunctionalTests extends tsUnit.TestClass {
-
+    endToEndJoinCount = 0;
 
     endToEndTest() : void {
         let data = ":kira.orbital.link NOTICE AUTH :*** Looking up your hostname...\r\n" + 
@@ -91,8 +91,8 @@ export class FunctionalTests extends tsUnit.TestClass {
             ":dabirc2!ident@host MODE #test -v dabircA\r\n" +
             ":dabircA!baditp@127.0.0.0 NICK :dabirc\r\n" +
             ":cribad!ident@127.0.0.0 JOIN :#test\r\n" +
-            ":dabirc!baditp@127.0.0.0 PART #test :Goodbye message\r\n" /*+
-            "\r\n" +
+            ":dabirc!baditp@127.0.0.0 PART #test :Goodbye message\r\n" +
+            ":thirduser!ident@127.0.0.1 PRIVMSG dabirc :hello there\r\n" /*+
             "\r\n" +
             "\r\n" +
             "\r\n" +
@@ -110,13 +110,14 @@ export class FunctionalTests extends tsUnit.TestClass {
         me.name = "dab.irc library";
         ctx.me = me;
 
-        let svr = new Manager.ManagedServer(ctx, connection, undefined, manager);
+        let svr = new Manager.ManagedServer("test", ctx, connection, undefined, manager);
 
         svr.on(Parser.Events.JOIN, (s:Parser.ParserServer, m:Core.Message) => {
             let msg = <Parser.ChannelUserChangeMessage>m;
             let length = Object.keys(manager.users.all).length;
 
-            if (msg.from.display == "dabirc!dabitp@127.0.0.1") {
+
+            if (msg.from.display == "dabirc!baditp@127.0.0.0") {
                 // no users should be in here but ourselves?
                 this.areIdentical(1, length);
             }
@@ -125,6 +126,17 @@ export class FunctionalTests extends tsUnit.TestClass {
                 this.areIdentical(4, length);
             }
         });
+
+        svr.on(Parser.Events.PART, (s:Parser.ParserServer, m:Core.Message) => {
+            this.areIdentical( m.from.display, "dabirc!baditp@127.0.0.0" );
+        });
+
+        svr.on(Parser.ExEvent.create(Parser.Events.JOIN, "#test"), (s:Parser.ParserServer,m:Core.Message) => {
+            this.endToEndJoinCount++;
+        });
+
+        svr.on(Parser.Events.PRIVMSG, (s:Parser.ParserServer, m:Core.Message) => {
+        });
         
         ctx.dataCallback = svr.dataReceived;
 
@@ -132,8 +144,9 @@ export class FunctionalTests extends tsUnit.TestClass {
 
         // send data to "socket"
         ctx.socket.callback(data);
-
-
+        
+        this.areIdentical(2, this.endToEndJoinCount, "Join count for specialized join callback not equal");
+        this.areIdentical(0, Object.keys(manager.channels).length);
     }
 
 }
