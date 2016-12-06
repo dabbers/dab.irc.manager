@@ -3,8 +3,8 @@ export declare class ManagedUser extends Core.User {
     channels: {
         [key: string]: Core.Mode[];
     };
-    join(chan: string): void;
-    part(chan: string): void;
+    joinChan(chan: string): void;
+    partChan(chan: string): void;
     modeChanged(chan: string, modes: Core.Mode[]): void;
     toString(): string;
 }

@@ -36,7 +36,7 @@ class UserManager {
         if (!this._allUsers[who.nick]) {
             this._allUsers[who.nick] = (who instanceof ManagedUser_1.ManagedUser ? who : new ManagedUser_1.ManagedUser(who.nick, who.ident, who.host));
         }
-        this._allUsers[who.nick].join(channel.display);
+        this._allUsers[who.nick].joinChan(channel.display);
         this._allUsers[who.nick].modeChanged(channel.display, who.modes);
     }
     join(msg, channel) {
@@ -44,14 +44,14 @@ class UserManager {
         if (!this._allUsers[who.nick]) {
             this._allUsers[who.nick] = new ManagedUser_1.ManagedUser(who.nick, who.ident, who.host);
         }
-        this._allUsers[who.nick].join(channel.display);
+        this._allUsers[who.nick].joinChan(channel.display);
     }
     part(msg, channel) {
         let who = msg.from;
         if (!this._allUsers[who.nick]) {
             throw new Error("Why are we seeing a part from a user not recorded? " + who.nick);
         }
-        this._allUsers[who.nick].part(channel.display);
+        this._allUsers[who.nick].partChan(channel.display);
     }
     rename(from, to) {
         let user = this._allUsers[from];

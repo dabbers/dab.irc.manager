@@ -33,7 +33,7 @@ export class ManagedServer extends Parser.ParserServer {
         this._alias = alias;
 
         // If the manager is shared, do we want to remove channels? Let's keep a cache I guess.
-        this.on(Parser.Events.PART, (s : Parser.ParserServer, m : Core.Message) => {
+        this.on(Parser.Events.PART, (s : Parser.ParserServer, m : Message) => {
             let msg = <Parser.ChannelUserChangeMessage>m;
             var from = <Core.User>msg.from;
             if (from.nick == this.me.nick) {
@@ -41,7 +41,7 @@ export class ManagedServer extends Parser.ParserServer {
             }
         });
 
-        this.on(Parser.Events.JOIN, (s : Parser.ParserServer, m : Core.Message) => {
+        this.on(Parser.Events.JOIN, (s : Parser.ParserServer, m : Message) => {
             let msg = <Parser.ChannelUserChangeMessage>m;
             var from = <Core.User>msg.from;
             if (from.nick == this.me.nick) {
@@ -53,21 +53,21 @@ export class ManagedServer extends Parser.ParserServer {
             }
         });
 
-        this.on(Parser.Numerics.ENDOFMOTD, (s:Parser.ParserServer, m : Core.Message) => {
+        this.on(Parser.Numerics.ENDOFMOTD, (s:Parser.ParserServer, m : Message) => {
             this.connection.write("WHOIS " + m.tokenized[2]); // whois me.nick
         });
-        this.on(Parser.Numerics.ERR_NOMOTD, (s:Parser.ParserServer, m : Core.Message) => {
+        this.on(Parser.Numerics.ERR_NOMOTD, (s:Parser.ParserServer, m : Message) => {
             this.connection.write("WHOIS " + m.tokenized[2]); // whois me.nick
         });
 
-        this.on(Parser.Events.MODE, (s:Parser.ParserServer, m:Core.Message) => {
+        this.on(Parser.Events.MODE, (s:Parser.ParserServer, m:Message) => {
             let msg = <Parser.ModeChangeMessage>m;
             
             this.modeChanged(msg.modes);
         });
 
         // :<sender, not you> 311 <Your Nick> <Requested Nick> <Ident> <Host> * :<Name>
-        this.on(Parser.Numerics.WHOISUSER, (s:Parser.ParserServer, m:Core.Message) => {
+        this.on(Parser.Numerics.WHOISUSER, (s:Parser.ParserServer, m:Message) => {
             if (m.tokenized[2] == m.tokenized[3]) {
                 this.me.nick = m.tokenized[3];
                 this.me.ident = m.tokenized[4];
@@ -76,14 +76,14 @@ export class ManagedServer extends Parser.ParserServer {
             }
         });
         
-        this.on(Parser.Events.NICK, (s:Parser.ParserServer, m:Core.Message) => {
+        this.on(Parser.Events.NICK, (s:Parser.ParserServer, m:Message) => {
             let msg = <Parser.NickChangeMessage>m;
             if ((<Core.User>msg.from).nick == this.me.nick) {
                 this.me.nick = msg.destination.nick;
             }
         });
 
-        this.on(Parser.Numerics.ISUPPORT, (s:Parser.ParserServer, m:Core.Message) => {
+        this.on(Parser.Numerics.ISUPPORT, (s:Parser.ParserServer, m:Message) => {
             // The parser parses the support into the attributes before calling the event.
             // But it's possible we have an empty value here, since multiple 005 events can be called.
             if (this.attributes["CHANTYPES"]) {
@@ -115,8 +115,8 @@ export class ManagedServer extends Parser.ParserServer {
     }
 
     
-    dataReceived = (data: Core.Message) => {
-        let cb = (s : Parser.ParserServer, m: Core.Message) => {
+    dataReceived = (data: Message) => {
+        let cb = (s : Parser.ParserServer, m: Message) => {
             // Update Message references with the manager references
             
             // Don't update from reference for nick change. We want both after to only reflect the actual user
@@ -171,7 +171,7 @@ export class ManagedServer extends Parser.ParserServer {
 
     }
 
-    private commonMessageResolution(m:Core.Message) {
+    private commonMessageResolution(m:Message) {
         if (m.from instanceof Core.User) {
             let usr = this._manager.users.byNick((<Core.User>m.from).nick);
             if (usr) m.updateFromReference(usr); 

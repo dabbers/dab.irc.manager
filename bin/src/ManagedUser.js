@@ -5,13 +5,13 @@ class ManagedUser extends Core.User {
         super(...arguments);
         this.channels = {};
     }
-    join(chan) {
+    joinChan(chan) {
         let channel = chan.toLocaleLowerCase();
         if (this.channels[chan] === undefined) {
             this.channels[channel] = [];
         }
     }
-    part(chan) {
+    partChan(chan) {
         let channel = chan.toLocaleLowerCase();
         if (this.channels[channel])
             delete this.channels[channel];

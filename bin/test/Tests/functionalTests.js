@@ -68,7 +68,8 @@ class FunctionalTests extends tsUnit.TestClass {
             ":dabirc2!ident@host MODE #test -v dabircA\r\n" +
             ":dabircA!baditp@127.0.0.0 NICK :dabirc\r\n" +
             ":cribad!ident@127.0.0.0 JOIN :#test\r\n" +
-            ":dabirc!baditp@127.0.0.0 PART #test :Goodbye message\r\n";
+            ":dabirc!baditp@127.0.0.0 PART #test :Goodbye message\r\n" +
+            ":thirduser!ident@127.0.0.1 PRIVMSG dabirc :hello there\r\n";
         let ctx = new SampleIRCContext();
         let connection = new Core.Connection();
         let manager = new Manager.ChannelManager();
@@ -91,6 +92,8 @@ class FunctionalTests extends tsUnit.TestClass {
         });
         svr.on(Parser.ExEvent.create(Parser.Events.JOIN, "#test"), (s, m) => {
             this.endToEndJoinCount++;
+        });
+        svr.on(Parser.Events.PRIVMSG, (s, m) => {
         });
         ctx.dataCallback = svr.dataReceived;
         connection.init(ctx);

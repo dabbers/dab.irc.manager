@@ -4,7 +4,7 @@ export class ManagedUser extends Core.User {
     channels : {[key:string]  : Core.Mode[] } = {};
 
 
-    join(chan: string) {
+    joinChan(chan: string) {
         let channel = chan.toLocaleLowerCase();
         
         // We depend on this check in UserManager
@@ -14,7 +14,7 @@ export class ManagedUser extends Core.User {
         }
     }
 
-    part(chan: string) {
+    partChan(chan: string) {
         let channel = chan.toLocaleLowerCase();
         
         // We depend on this check in UserManager

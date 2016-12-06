@@ -45,7 +45,7 @@ export class UserManager {
         }
         
         // We check if we already join the channel inside the join method. No need to double check here.
-        this._allUsers[who.nick].join(channel.display);
+        this._allUsers[who.nick].joinChan(channel.display);
         this._allUsers[who.nick].modeChanged(channel.display, who.modes);
     }
 
@@ -57,7 +57,7 @@ export class UserManager {
         }
         
         // We check if we already join the channel inside the join method. No need to double check here.
-        this._allUsers[who.nick].join(channel.display);
+        this._allUsers[who.nick].joinChan(channel.display);
     }
 
     part(msg: Parser.ChannelUserChangeMessage, channel: Core.Channel) {
@@ -67,7 +67,7 @@ export class UserManager {
             throw new Error("Why are we seeing a part from a user not recorded? " + who.nick);
         }
 
-        this._allUsers[who.nick].part(channel.display);
+        this._allUsers[who.nick].partChan(channel.display);
     }
 
     rename(from: string, to: string) {
