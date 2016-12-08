@@ -3,6 +3,7 @@ import * as Core from 'dab.irc.core/src';
 import {Message} from 'dab.irc.core/src/Message';
 import {ChannelManager} from './ChannelManager';
 import {ManagedUser} from './ManagedUser';
+import {ManagedChannelUser} from './ManagedChannelUser';
 
 export class ManagedServer extends Parser.ParserServer {
 
@@ -32,6 +33,8 @@ export class ManagedServer extends Parser.ParserServer {
         this._context = context;
         this._alias = alias;
 
+        // Required due to super class doing the same thing (weird javascript/typescript timing issue)
+        context.dataCallback = this.dataReceived;
         // If the manager is shared, do we want to remove channels? Let's keep a cache I guess.
         this.on(Parser.Events.PART, (s : Parser.ParserServer, m : Message) => {
             let msg = <Parser.ChannelUserChangeMessage>m;
@@ -131,7 +134,16 @@ export class ManagedServer extends Parser.ParserServer {
                 }
             }
             else if (m instanceof Parser.ConversationMessage) {
-                let d = m.destination instanceof Core.User ? this.users[ (<Core.User>m.destination).nick ] : this.channel[m.destination.display];
+                let d = (
+                    m.destination instanceof Core.User ? 
+                        (this.me.nick == m.destination.target ? this.users[ m.from.target ] : this.users[ (<Core.User>m.destination).nick ] ) 
+                        : this.channel[m.destination.display]
+                );
+
+                if (m.destination instanceof Core.Channel && m.from instanceof ManagedUser) {
+                    m.updateFromReference( new ManagedChannelUser( m.from, m.destination.target ) );
+                }
+
                 if (d) {
                     m.updateDestinationReference(d);
                 }

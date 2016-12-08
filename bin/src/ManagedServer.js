@@ -17,7 +17,9 @@ class ManagedServer extends Parser.ParserServer {
                     }
                 }
                 else if (m instanceof Parser.ConversationMessage) {
-                    let d = m.destination instanceof Core.User ? this.users[m.destination.nick] : this.channel[m.destination.display];
+                    let d = (m.destination instanceof Core.User ?
+                        (this.me.nick == m.destination.target ? this.users[m.from.target] : this.users[m.destination.nick])
+                        : this.channel[m.destination.display]);
                     if (d) {
                         m.updateDestinationReference(d);
                     }
@@ -54,6 +56,7 @@ class ManagedServer extends Parser.ParserServer {
         this._manager = chanManager;
         this._context = context;
         this._alias = alias;
+        context.dataCallback = this.dataReceived;
         this.on(Parser.Events.PART, (s, m) => {
             let msg = m;
             var from = msg.from;
