@@ -2,6 +2,8 @@
 const Parser = require('dab.irc.parser/src');
 const Core = require('dab.irc.core/src');
 const ChannelManager_1 = require('./ChannelManager');
+const ManagedUser_1 = require('./ManagedUser');
+const ManagedChannelUser_1 = require('./ManagedChannelUser');
 class ManagedServer extends Parser.ParserServer {
     constructor(alias, context, connection, parser = void 0, chanManager = new ChannelManager_1.ChannelManager()) {
         super(context, connection, parser);
@@ -20,6 +22,9 @@ class ManagedServer extends Parser.ParserServer {
                     let d = (m.destination instanceof Core.User ?
                         (this.me.nick == m.destination.target ? this.users[m.from.target] : this.users[m.destination.nick])
                         : this.channel[m.destination.display]);
+                    if (m.destination instanceof Core.Channel && m.from instanceof ManagedUser_1.ManagedUser) {
+                        m.updateFromReference(new ManagedChannelUser_1.ManagedChannelUser(m.from, m.destination.target));
+                    }
                     if (d) {
                         m.updateDestinationReference(d);
                     }

@@ -33,7 +33,7 @@ export class ManagedServer extends Parser.ParserServer {
         this._context = context;
         this._alias = alias;
 
-        // Required due to super class doing the same thing (weird javascript/typescript timing issue)
+        // Required due to super class doing the same thing (weird javascript/typescript sequence reference order issue)
         context.dataCallback = this.dataReceived;
         // If the manager is shared, do we want to remove channels? Let's keep a cache I guess.
         this.on(Parser.Events.PART, (s : Parser.ParserServer, m : Message) => {
@@ -150,6 +150,7 @@ export class ManagedServer extends Parser.ParserServer {
             }
             else if (m instanceof Parser.ModeChangeMessage) {
                 let d = m.destination instanceof Core.User ? this.users[ (<Core.User>m.destination).nick ] : this.channel[m.destination.display];
+                
                 if (d) {
                     m.updateDestinationReference(d);
                 }
